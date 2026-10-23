@@ -1,0 +1,13 @@
+{
+  "appId": "app.myday.planner",
+  "appName": "Мій день",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css"
+    }
+  }
+}
