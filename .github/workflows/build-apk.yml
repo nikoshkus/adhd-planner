@@ -7,18 +7,18 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       KS64: ${{ secrets.KEYSTORE_BASE64 }}
       KSPASS: ${{ secrets.KEYSTORE_PASSWORD }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -63,7 +63,7 @@ jobs:
             echo "::warning::Ключ підпису не налаштовано. APK підписано тимчасовим ключем, оновлення поверх такої версії не спрацюють. Див. SETUP.md, крок 5."
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: MyDay-apk
           path: MyDay.apk
