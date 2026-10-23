@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Мій день</title>
+<style>
+:root{color-scheme:light dark;--bg:#edf1f5;--sf:#fff;--ink:#1c2733;--mut:#586878;--ac:#27418f;--wa:#a4510a;--was:#fbeedd;--ln:#d3dce5;--i1:#b9c4cf;--i2:#7f95ad;--i3:#d98a1c;--i4:#c2392b}
+@media(prefers-color-scheme:dark){:root{--bg:#12181f;--sf:#1a222b;--ink:#e6edf3;--mut:#93a3b3;--ac:#8ea6ff;--wa:#f0a860;--was:#3a2a17;--ln:#2b3642;--i1:#4a5866;--i2:#6f86a0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{max-width:640px;margin:0 auto;padding:calc(20px + var(--safe-area-inset-top,env(safe-area-inset-top,0px))) 16px calc(64px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}
+h1{font-size:30px;line-height:1.15;margin:8px 0 2px;letter-spacing:-.02em}
+h2{font-size:18px;margin:26px 0 10px}
+.dt{color:var(--mut);margin:0 0 16px;text-transform:capitalize}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--ln);margin-bottom:20px}
+nav button{background:none;border:0;padding:10px 12px;font:inherit;color:var(--mut);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+nav button[aria-selected=true]{color:var(--ink);border-color:var(--ac);font-weight:600}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:999px;padding:10px 16px;font:inherit;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--ac);border-color:var(--ac);color:var(--sf)}
+.btn{background:var(--ac);color:var(--sf);border:0;border-radius:10px;padding:11px 18px;font:inherit;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.ghost{background:none;border:1.5px solid var(--ln);color:var(--ink);border-radius:10px;padding:9px 14px;font:inherit;cursor:pointer}
+.link{background:none;border:0;color:var(--ac);font:inherit;cursor:pointer;text-decoration:underline;padding:0}
+ul{list-style:none;margin:0;padding:0}
+.row{display:flex;gap:12px;align-items:flex-start;padding:12px 12px 12px 14px;background:var(--sf);border-left:5px solid var(--i1);margin-bottom:8px;border-radius:0 10px 10px 0}
+.i2{border-color:var(--i2)}.i3{border-color:var(--i3)}.i4{border-color:var(--i4)}
+.bd{flex:1;min-width:0}
+.ck{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--mut);background:none;cursor:pointer;color:transparent;font-size:16px;line-height:1;padding:0}
+.dn .ck{background:var(--ac);border-color:var(--ac);color:var(--sf)}
+.dn b{text-decoration:line-through;color:var(--mut)}
+.tm{font-variant-numeric:tabular-nums;color:var(--ac);margin-right:8px}
+.sk{opacity:.6}
+code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:14px}
+.late{color:var(--wa);font-weight:600}
+.meta{color:var(--mut);font-size:14px}
+details{font-size:14px;color:var(--mut);margin-top:4px}
+details ul{list-style:disc;padding-left:20px}
+.bar{display:flex;gap:3px;height:12px;margin:12px 0 4px}
+.bar i{background:var(--ac);border-radius:3px;min-width:6px}
+.bar u{background:var(--ln);border-radius:3px}
+.warn{background:var(--was);border-left:5px solid var(--wa);padding:10px 14px;border-radius:0 10px 10px 0;margin:8px 0}
+.warn b{color:var(--wa)}
+.sum{color:var(--mut);margin:0}
+dialog{border:0;border-radius:14px;padding:20px;width:min(520px,94vw);background:var(--sf);color:var(--ink)}
+dialog::backdrop{background:#0008}
+label{display:block;font-size:14px;color:var(--mut);margin:12px 0 4px}
+input,select,textarea{width:100%;font:inherit;padding:9px 10px;border:1.5px solid var(--ln);border-radius:8px;background:var(--bg);color:var(--ink)}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+#toast{position:fixed;left:0;right:0;top:calc(12px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)));display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 12px;z-index:9}
+.t{background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;max-width:520px}
+</style></head><body>
+<main id="app"></main><div id="toast"></div><dialog id="dlg"></dialog>
+<script src="native.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const NP=window.NP,NATIVE=!!(NP&&NP.native);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const TL=['','швидко','нормально','довго','дуже довго'],TM=[0,10,30,60,120];
+const DL=['','легко','нормально','складно','дуже складно'];
+const IL=['','низька','звичайна','висока','критична'];
+const FL={day:'Щодня',week:'Щотижня',month:'Щомісяця',year:'Щороку'};
+const WS=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
+const WD=['Неділя','Понеділок','Вівторок','Середа','Четвер','Пʼятниця','Субота'],WO=[1,2,3,4,5,6,0];
+const P={gemini:{model:'gemini-2.5-flash'}};
+// name, freq, when, time, difficulty, importance, reminder, steps
+const D=[
+['Ліки та вітаміни','day','',1,1,4,'09:00'],['Сніданок і склянка води','day','',1,1,2,'08:00'],
+['10 хвилин прибирання','day','',1,1,2,'18:00'],['Перевірити пошту й повідомлення','day','',2,2,2,'12:00'],
+['Прогулянка','day','',2,1,2,'17:00'],['Підготувати речі на завтра','day','',1,1,2,'21:00'],
+['Планування тижня','week','1',2,2,3,'09:30'],['Прання','week','6',3,2,2,'11:00'],
+['Закупи продуктів','week','6',3,2,3,'14:00',['Перевірити холодильник і скласти список','Вибрати магазин і час','Купити за списком','Розкласти покупки']],
+['Генеральне прибирання кімнати','week','0',3,3,2,'10:00'],
+['Оплатити комунальні','month','5',2,2,4,'10:00'],
+['Підрахувати місячний бюджет','month','28',3,3,3,'19:00',['Зібрати витрати за місяць','Розкласти по категоріях','Порівняти з планом','Записати висновки на наступний місяць']],
+['Профогляд у лікаря','year','09-01',3,3,3,'10:00',['Обрати лікаря або клініку','Записатися','Підготувати питання й документи','Піти на прийом']],
+['Продовжити документи й страховки','year','01-15',2,3,3,'11:00']];
+const seed=()=>D.map((x,k)=>({id:'s'+k,n:x[0],f:x[1],w:x[2],tm:x[3],d:x[4],i:x[5],r:x[6],s:x[7]||[],dn:[]}));
+
+// ---- data layer (replace with SQLite/Capacitor later) ----
+const KEY='mij-den-v1';let S;
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+ if(!S||!Array.isArray(S.tasks))S={v:2,tasks:seed(),ci:{},ntf:{},ntd:'',ai:{p:'gemini',key:'',model:P.gemini.model},g:{id:'',w:false,on:false},nc:{on:false,ids:[],wid:''}}}
+function migrate(){if(!S.g)S.g={id:'',w:false,on:false};if(!S.nc)S.nc={on:false,ids:[],wid:''};if(S.ai.p!=='gemini')S.ai={p:'gemini',key:'',model:P.gemini.model};S.tasks.forEach(t=>{if(!t.c)t.c=today});save();if(!S.v){S.v=2;S.tasks.forEach(t=>{const m=/^s(\d+)$/.exec(t.id);if(m&&!t.r&&D[m[1]])t.r=D[m[1]][6]||''});save()}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Не вдалося зберегти дані')}schedSoon()}
+
+let tab='today',today=ymd(new Date()),editCi=false,draft={},showAll=false,editing=null;
+const sortT=(a,b)=>(a.r||'99:99').localeCompare(b.r||'99:99');
+const sortG=(a,b)=>{const k=t=>t.f==='week'?WO.indexOf(+t.w):t.f==='month'?+t.w:t.f==='year'?t.w:0,x=k(a),y=k(b);return x<y?-1:x>y?1:sortT(a,b)};
+const find=id=>S.tasks.find(t=>t.id===id);
+const isDone=t=>t.dn.includes(today);
+function due(t,d=new Date()){
+ if(t.f==='day')return true;
+ if(t.f==='week')return d.getDay()==t.w;
+ if(t.f==='month'){const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();return d.getDate()==Math.min(+t.w,last)}
+ return t.w===pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function whenTxt(t){return t.f==='week'?WD[t.w]:t.f==='month'?t.w+' числа':t.f==='year'?t.w.split('-').reverse().join('.'):''}
+
+// overdue: weekly/monthly/yearly tasks stay on the list until done
+function late(t,base=new Date()){
+ const bs=ymd(base);
+ if(t.f==='day'||due(t,base))return 0;
+ const lim={week:6,month:31,year:60}[t.f];
+ for(let k=1;k<=lim;k++){
+  const d=new Date(base);d.setDate(d.getDate()-k);const s=ymd(d);
+  if(s<(t.c||'0'))return 0;
+  if(due(t,d))return t.dn.some(x=>x>=s&&x!==bs)||(t.sk||[]).some(x=>x>=s)?0:k;
+ }
+ return 0;
+}
+const isSkip=t=>(t.sk||[]).includes(today);
+const act=t=>due(t)||late(t)>0||isSkip(t);
+const sortD=(a,b)=>(late(b)>0)-(late(a)>0)||sortT(a,b);
+
+// ---- planning ----
+function plan(){
+ const c=S.ci[today];if(!c)return null;
+ let maxD={1:2,2:3,3:4}[c.e];if(c.m==1)maxD=Math.max(1,maxD-1);
+ const budget=calOn()?Math.min(c.t,Math.max(freeMin(),0)):c.t;let left=budget;const pick=[],rest=[];
+ const ei=t=>Math.min(4,t.i+(late(t)?1:0)),cand=S.tasks.filter(t=>act(t)&&!isDone(t)&&!isSkip(t)).sort((a,b)=>ei(b)-ei(a)||a.d-b.d||a.tm-b.tm);
+ for(const t of cand){if(t.d<=maxD&&TM[t.tm]<=left){pick.push(t);left-=TM[t.tm]}else rest.push(t)}
+ pick.sort(sortD);rest.sort(sortD);const warn=rest.filter(t=>t.i>=3||late(t)).map(t=>({t,why:t.d>maxD?'hard':'time'}));
+ return{c,maxD,pick,rest,warn,left,budget};
+}
+
+// ---- views ----
+function row(t,mode){
+ const w=whenTxt(t);
+ const lab=[t.f==='week'?WS[t.w]:t.f==='month'?t.w+'-го':t.f==='year'?w:'',t.r].filter(Boolean).join(' · ');
+ const K=mode==='edit'||isDone(t)?'':isSkip(t)?`<button class="link" data-a="unskip" data-id="${t.id}">Повернути</button>`:`<button class="link" data-a="skip" data-id="${t.id}">Пропустити цього разу</button>`;
+ const L=mode!=='edit'&&!isDone(t)?late(t):0;
+ const X=mode!=='edit'&&!isDone(t)?clash(t):null;
+ const meta=`${isSkip(t)&&mode!=='edit'?'<span class="late">пропущено цього разу</span> · ':''}${L?`<span class="late">прострочено на ${L} дн.</span> · `:''}${TL[t.tm]} (~${TM[t.tm]} хв) · ${DL[t.d]} · важливість: ${IL[t.i]}${t.f!=='day'?' · '+FL[t.f].toLowerCase()+', '+esc(w.toLowerCase()):''}${X?` · <span class="late">збігається з «${esc(X.n)}» ${hm(X.s)}–${hm(X.e)}</span>`:''}`;
+ const steps=t.s.length?`<details><summary>Кроки (${t.s.length})</summary><ul>${t.s.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></details>`:'';
+ const act=mode==='edit'?`<button class="ghost" data-a="edit" data-id="${t.id}">Змінити</button>`:'';
+ const ck=mode==='edit'?'':`<button class="ck" data-a="done" data-id="${t.id}" aria-label="Позначити зробленим">✓</button>`;
+ return `<li class="row i${t.i} ${mode!=='edit'&&isDone(t)?'dn':mode!=='edit'&&isSkip(t)?'sk':''}">${ck}<div class="bd"><b>${lab?`<span class="tm">${lab}</span>`:''}${esc(t.n)}</b><div class="meta">${meta}</div>${steps}${K?`<div>${K}</div>`:''}</div>${act}</li>`;
+}
+function vCheck(){
+ const G=[['m','Який настрій?',[[1,'😞 Важко'],[2,'😐 Так собі'],[3,'🙂 Добре']]],['e','Скільки енергії?',[[1,'Мало'],[2,'Середньо'],[3,'Багато']]],['t','Скільки часу готові попрацювати?',[[30,'30 хв'],[60,'1 год'],[120,'2 год'],[240,'4 год і більше']]]];
+ const ok=draft.m&&draft.e&&draft.t;
+ return `<p>Три швидкі питання, щоб підібрати справи під ваш стан.</p>${calOn()?`<p class="meta">📅 Вільно в календарі до 22:00: ${fmtMin(Math.max(freeMin(),0))}</p>`:''}`+G.map(g=>`<h2>${g[1]}</h2><div class="chips">${g[2].map(o=>`<button class="chip" aria-pressed="${draft[g[0]]===o[0]}" data-a="ci" data-k="${g[0]}" data-v="${o[0]}">${o[1]}</button>`).join('')}</div>`).join('')
+ +`<p style="margin-top:24px"><button class="btn" data-a="ciok" ${ok?'':'disabled'}>Показати підбірку</button> <button class="link" data-a="ciskip">Пропустити, показати все</button></p>`;
+}
+function vToday(){
+ if(!S.ci[today]||editCi)return vCheck();
+ const p=plan(),items=S.tasks.filter(act).sort(sortD),nd=items.filter(isDone).length,tot=items.filter(t=>!isSkip(t)).length;
+ const E=['','мало','середньо','багато'],M=['','😞','😐','🙂'];
+ const used=p.budget-p.left;
+ let h=`<p class="sum">${p.c.skip?'Без підбору':`Настрій ${M[p.c.m]} · енергія: ${E[p.c.e]} · час: ${p.c.t>=60?p.c.t/60+' год':p.c.t+' хв'}`} <button class="link" data-a="cichange">змінити</button></p>`;
+ h+=`<div class="bar" role="img" aria-label="Заплановано ${used} хв з ${p.budget}">${p.pick.map(t=>`<i style="flex:${TM[t.tm]}"></i>`).join('')}${p.left>0?`<u style="flex:${p.left}"></u>`:''}</div>`;
+ h+=`<p class="meta">Заплановано ${used} із ${p.budget} хв${p.budget<p.c.t?' (скорочено через події в календарі)':''} · зроблено ${nd} із ${tot}</p>`;
+ h+=calLine();
+ h+=`<h2>Зараз підійде</h2>`;
+ h+=p.pick.length?`<ul>${p.pick.map(t=>row(t)).join('')}</ul>`:`<p>${tot&&nd===tot?'Усе на сьогодні зроблено. Чудово!':'Під ваш стан зараз нічого не підходить. Гляньте блок нижче або повний список.'}</p>`;
+ if(p.warn.length)h+=`<h2>Не забудьте: важливе й прострочене</h2>`+p.warn.map(w=>`<div class="warn"><b>${esc(w.t.n)}</b> (${IL[w.t.i]} важливість).${late(w.t)?' Прострочено на '+late(w.t)+' дн.':''} ${w.why==='hard'?`Складна для сьогоднішньої енергії${w.t.s.length?'.':' — розбийте її на кроки.'}`:'Не вистачає часу в підбірці. Знайдіть хоча б 10 хвилин.'} <button class="link" data-a="edit" data-id="${w.t.id}">Відкрити</button></div>`).join('');
+ h+=`<p style="margin-top:22px"><button class="ghost" data-a="all">${showAll?'Сховати повний список':`Показати всі задачі на сьогодні (${items.length})`}</button></p>`;
+ if(showAll)h+=`<ul>${items.map(t=>row(t)).join('')}</ul>`;
+ return h;
+}
+function vAll(){
+ return `<p><button class="btn" data-a="new">+ Нова задача</button></p>`+Object.keys(FL).map(f=>{const L=S.tasks.filter(t=>t.f===f).sort(sortG);return `<h2>${FL[f]}</h2>`+(L.length?`<ul>${L.map(t=>row(t,'edit')).join('')}</ul>`:'<p class="meta">Порожньо</p>')}).join('');
+}
+function vSet(){
+ const A=S.ai,np='Notification' in window?Notification.permission:'unsupported',ML=A.models&&A.models.length?A.models:[];
+ return `<h2>ШІ-оцінка часу, складності й кроків</h2>
+ <p class="meta">Працює з безкоштовним ключем. Ключ зберігається лише на цьому пристрої. Без ключа діє проста автоматична оцінка. Використовується Google Gemini. Ліміти й назви моделей змінюються, тож перевірте їх у Google AI Studio.</p>
+ <label>API-ключ</label><input id="s-k" type="password" value="${esc(A.key)}" autocomplete="off">
+ <label>Модель</label><input id="s-m" value="${esc(A.model)}">
+ <div id="s-mlb" ${ML.length?'':'hidden'}><label>Безкоштовні моделі (${ML.length})</label><select id="s-ml" data-ch="mlsel"><option value="" ${ML.some(m=>m.id===A.model)?'':'selected'}>— обрати зі списку —</option>${ML.map(m=>`<option value="${esc(m.id)}" ${m.id===A.model?'selected':''}>${esc(m.n)} (${esc(m.id)})</option>`).join('')}</select></div>
+ <div class="acts"><button class="ghost" data-a="models">Знайти безкоштовні моделі</button></div>
+ <p class="meta">Розраховано на безкоштовний тариф. Для Gemini застосунок перевіряє кожну модель коротким тестовим запитом і залишає ті, що відповідають. Це забирає кілька запитів із денного ліміту. Якщо ліміт моделі вичерпано, застосунок спробує іншу зі списку, а потім просту оцінку.</p>
+ <div class="acts"><button class="btn" data-a="saveai">Зберегти</button><button class="ghost" data-a="testai">Перевірити</button></div>
+ ${gSet()}
+ ${remSet()}
+ <h2>Дані</h2>
+ <div class="acts"><button class="ghost" data-a="exp">Експорт у файл</button><label class="ghost" style="margin:0;cursor:pointer;color:var(--ink)">Імпорт<input id="imp" type="file" accept="application/json,.json" hidden></label><button class="ghost" data-a="reset">Скинути шаблони</button></div>`;
+}
+function R(){
+ const h=new Date().getHours();
+ $('#app').innerHTML=`<h1>${h<12?'Доброго ранку':h<18?'Добрий день':'Добрий вечір'}</h1><p class="dt">${new Date().toLocaleDateString('uk-UA',{weekday:'long',day:'numeric',month:'long'})}</p>
+ <nav>${[['today','Сьогодні'],['all','Усі задачі'],['set','Налаштування']].map(x=>`<button data-a="tab" data-v="${x[0]}" aria-selected="${tab===x[0]}">${x[1]}</button>`).join('')}</nav>`
+ +(tab==='today'?vToday():tab==='all'?vAll():vSet());
+}
+function toast(m){const e=document.createElement('div');e.className='t';e.textContent=m;$('#toast').append(e);setTimeout(()=>e.remove(),6000)}
+
+// ---- AI + fallback ----
+async function askAI(n,f,model){
+ const A=model?{...S.ai,model}:S.ai;
+ const q=`Ти допомагаєш людині з РДУГ планувати справи. Оціни задачу "${n}" (періодичність: ${FL[f]}). Відповідай ЛИШЕ JSON без пояснень: {"tm":1-4,"d":1-4,"i":1-4,"r":"HH:MM","steps":[]}. tm — тривалість: 1 до 15 хв, 2 близько 30 хв, 3 близько години, 4 дві години й більше. d — складність: 1 легко, 2 нормально, 3 складно, 4 дуже складно. i — важливість: 1 низька, 2 звичайна, 3 висока, 4 критична. r — зручний час доби для виконання, формат HH:MM. Якщо d або tm не менше 3, у steps дай 3-6 коротких конкретних кроків українською, інакше порожній масив.`;
+ let txt;
+ {
+  const r=await fx(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(A.model)}:generateContent?key=${encodeURIComponent(A.key)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:q}]}]})});
+  if(!r.ok)throw Error('HTTP '+r.status);const j=await r.json();txt=j.candidates[0].content.parts[0].text;
+ }
+ const o=JSON.parse(txt.match(/\{[\s\S]*\}/)[0]),c=x=>Math.min(4,Math.max(1,Math.round(+x)||2));
+ return{tm:c(o.tm),d:c(o.d),i:c(o.i),r:/^([01]\d|2[0-3]):[0-5]\d$/.test(o.r)?o.r:'',steps:Array.isArray(o.steps)?o.steps.map(String).slice(0,8):[]};
+}
+function heur(t){
+ const s=t.toLowerCase();let d=2,tm=2,i=2,r='12:00';
+ if(/прибир|закуп|бюджет|звіт|документ|пральн|прання|готув|план|проєкт|проект/.test(s)){d=3;tm=3}
+ if(/декларац|переїзд|ремонт|курсов|дипл/.test(s)){d=4;tm=4}
+ if(/ліки|вітамін|вод|чай|зуб|ліжк|застел|пошт|повідомл/.test(s)){d=1;tm=1}
+ if(/оплат|лікар|термін|податк|рахунк|документ|ліки/.test(s))i=3;
+ if(/податк|оплат|рахунк|термін/.test(s))i=4;
+ if(/ліки|вітамін|вод|зуб|сніданок/.test(s))r='08:30';else if(/прогул|спорт|трен/.test(s))r='17:00';else if(/оплат|рахунк|податк|лікар|документ|термін/.test(s))r='10:00';else if(/прибир|прання|пральн/.test(s))r='11:00';else if(/завтра|вечір|план/.test(s))r='21:00';
+ return{d,tm,i,r,steps:['Зібрати все потрібне','Зробити перший маленький крок на 5 хвилин','Продовжити основну частину','Перевірити й позначити зробленим']};
+}
+
+// ---- editor ----
+const opt=(L,sel)=>[1,2,3,4].map(v=>`<option value="${v}" ${v==sel?'selected':''}>${L[v]}</option>`).join('');
+function whenField(f,w){
+ if(f==='week')return `<label>У який день тижня</label><select id="f-w">${WO.map(d=>`<option value="${d}" ${d==w?'selected':''}>${WD[d]}</option>`).join('')}</select>`;
+ if(f==='month')return `<label>Якого числа</label><input id="f-w" type="number" min="1" max="31" value="${w||1}">`;
+ if(f==='year')return `<label>Дата</label><input id="f-w" type="date" value="2000-${w||'01-01'}">`;
+ return '';
+}
+function getW(f){const e=$('#f-w');if(!e)return '';return f==='year'?e.value.slice(5):e.value}
+function openEdit(id){
+ const t=id?find(id):{id:'',n:'',f:'day',w:'',tm:2,d:2,i:2,r:'',s:[],dn:[]};editing=t;
+ $('#dlg').innerHTML=`<b style="font-size:18px">${id?'Змінити задачу':'Нова задача'}</b>
+ <label>Назва</label><input id="f-n" value="${esc(t.n)}">
+ <label>Як часто</label><select id="f-f" data-ch="freq">${Object.keys(FL).map(k=>`<option value="${k}" ${k===t.f?'selected':''}>${FL[k]}</option>`).join('')}</select>
+ <div id="f-wb">${whenField(t.f,t.w)}</div>
+ <div class="g3"><div><label>Час</label><select id="f-tm" data-ch="hint">${opt(TL,t.tm)}</select></div><div><label>Складність</label><select id="f-d" data-ch="hint">${opt(DL,t.d)}</select></div><div><label>Важливість</label><select id="f-i">${opt(IL,t.i)}</select></div></div>
+ <p class="meta" id="f-note"></p>
+ <label>Нагадування (необовʼязково)</label><input id="f-r" type="time" value="${t.r}">
+ <label>Кроки (по одному в рядку)</label><textarea id="f-s" rows="4" data-ch="hint">${esc(t.s.join('\n'))}</textarea>
+ <div id="f-h" class="warn" hidden>Задача складна або довга. Розбийте її на маленькі кроки, так легше почати. <button class="link" data-a="est">Запропонувати кроки</button></div>
+ <div class="acts"><button class="btn" data-a="save">Зберегти</button><button class="ghost" data-a="est">✨ Оцінити</button><button class="ghost" data-a="close">Скасувати</button>${canWrite()?`<button class="ghost" data-a="gadd">📅 ${(NATIVE?t.ne:t.ge)?'Оновити в календарі':'Додати в календар'}</button>`:''}${id?'<button class="ghost" data-a="del">Видалити</button>':''}</div>`;
+ $('#dlg').showModal();hint();
+}
+function hint(){const d=+$('#f-d').value,tm=+$('#f-tm').value;$('#f-h').hidden=!((d>=3||tm>=3)&&!$('#f-s').value.trim())}
+async function estimate(btn){
+ const n=$('#f-n').value.trim();if(!n)return toast('Спершу введіть назву');
+ const old=btn.textContent;btn.disabled=true;btn.textContent='Оцінюю…';
+ let r,src='проста автоматична оцінка';
+ if(S.ai.key){
+  const alt=S.ai.models?(S.ai.models||[]).map(m=>m.id).filter(id=>id!==S.ai.model).slice(0,2):[];let lim=0;
+  for(const m of [S.ai.model,...alt]){
+   try{r=await askAI(n,$('#f-f').value,m);src='оцінка ШІ';if(m!==S.ai.model)toast('Основна модель недоступна, використано '+m);break}
+   catch(e){if(/HTTP (429|404|403)|таймаут/.test(e.message))lim=1;else{toast('ШІ недоступний ('+e.message+'). Використано просту оцінку.');break}}
+  }
+  if(!r&&lim)toast('Ліміт безкоштовного тарифу вичерпано. Використано просту оцінку.');
+ }
+ if(!r)r=heur(n);
+ $('#f-tm').value=r.tm;$('#f-d').value=r.d;$('#f-i').value=r.i;if(r.r&&!$('#f-r').value)$('#f-r').value=r.r;
+ if((r.d>=3||r.tm>=3)&&!$('#f-s').value.trim())$('#f-s').value=r.steps.join('\n');
+ $('#f-note').textContent=`Це ${src}. Поправте, якщо не так.`;
+ btn.disabled=false;btn.textContent=old;hint();
+}
+function saveTask(keep){
+ const n=$('#f-n').value.trim();if(!n)return toast('Введіть назву задачі');
+ const f=$('#f-f').value,t=editing,isNew=!t.id,ch=isNew||t.f!==f||t.w!==getW(f);
+ Object.assign(t,{n,f,w:getW(f),tm:+$('#f-tm').value,d:+$('#f-d').value,i:+$('#f-i').value,r:$('#f-r').value,s:$('#f-s').value.split('\n').map(x=>x.trim()).filter(Boolean)});
+ if(ch)t.c=today;
+ if(isNew){t.id='t'+Date.now().toString(36);S.tasks.push(t)}
+ save();if(keep!==true)$('#dlg').close();R();return true;
+}
+
+// ---- reminders (while page is open) ----
+function notify(t){
+ toast('⏰ '+t.n);
+ try{if('Notification' in window&&Notification.permission==='granted')new Notification('Нагадування',{body:t.n})}catch(e){}
+}
+function tick(){
+ const n=new Date(),nd=ymd(n);
+ if(nd!==today){today=nd;showAll=false;editCi=false;R()}
+ if(S.ntd!==today){S.ntf={};S.ntd=today}
+ const cur=n.getHours()*60+n.getMinutes();
+ for(const t of NATIVE?[]:S.tasks){
+  if(!t.r||!act(t)||isDone(t)||isSkip(t)||S.ntf[t.id])continue;
+  const[h,m]=t.r.split(':').map(Number),at=h*60+m;
+  if(cur>=at&&cur<at+120){S.ntf[t.id]=1;save();notify(t)}
+ }
+ if(calEnabled()&&gok()&&(Date.now()-CAL.ts>300000||CAL.d!==today))loadCal().then(()=>{if(tab==='today')R()});
+}
+
+async function fx(u,o={},ms=15000){
+ const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
+ try{return await fetch(u,{...o,signal:c.signal})}catch(e){throw Error(e.name==='AbortError'?'таймаут':e.message)}finally{clearTimeout(t)}
+}
+async function probe(key,id){
+ try{const r=await fx(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(id)}:generateContent?key=${encodeURIComponent(key)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'ok'}]}],generationConfig:{maxOutputTokens:8}})},10000);return r.ok}catch(e){return false}
+}
+async function loadModels(btn){
+ const old=btn.textContent;btn.disabled=true;
+ const A={p:'gemini',key:$('#s-k').value.trim(),model:$('#s-m').value.trim()};
+ if(!A.key)return toast('Спершу вставте API-ключ');
+ try{
+  let L,r,j;
+  if(A.p==='gemini'){
+   r=await fx(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${encodeURIComponent(A.key)}`);
+   if(!r.ok)throw Error('HTTP '+r.status);j=await r.json();
+   L=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')&&!/tts|image|embed|live|audio|imagen|veo|robotics|computer-use/.test(m.name)).map(m=>({id:m.name.replace('models/',''),n:m.displayName||m.name}));
+   L.sort((a,b)=>(/flash|lite/.test(b.id)-/flash|lite/.test(a.id))||(a.id<b.id?-1:1));
+   const T=L.slice(0,20),ok=[];
+   let qi=0,dn=0;btn.textContent=`Перевіряю безкоштовні 0/${T.length}…`;
+   await Promise.all(Array.from({length:4},async()=>{while(qi<T.length){const m=T[qi++];if(await probe(A.key,m.id))ok.push(m);btn.textContent=`Перевіряю безкоштовні ${++dn}/${T.length}…`}}));
+   L=ok;
+  }
+  L.sort((a,b)=>a.id<b.id?-1:1);
+  S.ai={...S.ai,...A,models:L,mp:A.p};save();R();toast(L.length?(A.p==='gemini'?`Доступно на безкоштовному тарифі: ${L.length}`:`Доступних моделей: ${L.length}`):'Жодна модель не відповіла. Перевірте ключ.');
+ }catch(e){toast('Не вдалося отримати список: '+e.message)}finally{btn.disabled=false;btn.textContent=old}
+}
+// ---- Google Calendar ----
+const hm=d=>pad(d.getHours())+':'+pad(d.getMinutes());
+const fmtMin=m=>Math.floor(m/60)+' год '+m%60+' хв';
+const mmDay=d=>{const n=new Date();return d.toDateString()===n.toDateString()?d.getHours()*60+d.getMinutes():d>n?1440:0};
+let gtok='',gexp=0;
+const CAL={ev:[],ok:false,d:'',ts:0,err:''};
+const calEnabled=()=>NATIVE?S.nc.on:S.g.on;
+const canWrite=()=>calEnabled()&&(NATIVE?!!S.nc.wid:S.g.w);
+const gok=()=>NATIVE?!!S.nc.on:!!gtok&&Date.now()<gexp;
+const calOn=()=>CAL.ok&&CAL.d===today;
+function freeMin(){
+ const n=new Date(),from=Math.max(n.getHours()*60+n.getMinutes(),7*60),to=22*60;if(from>=to)return 0;
+ const iv=CAL.ev.map(e=>[Math.max(mmDay(e.s),from),Math.min(mmDay(e.e),to)]).filter(x=>x[1]>x[0]).sort((a,b)=>a[0]-b[0]);
+ let busy=0,end=-1;for(const[s,e] of iv){const st=Math.max(s,end);if(e>st){busy+=e-st;end=e}}
+ return to-from-busy;
+}
+function clash(t){
+ if(!calOn()||!t.r)return null;
+ const[h,m]=t.r.split(':').map(Number),s=h*60+m,e=s+TM[t.tm];
+ return CAL.ev.find(x=>mmDay(x.s)<e&&mmDay(x.e)>s)||null;
+}
+function calLine(){
+ if(!calEnabled())return '';
+ if(!gok())return `<p class="meta">📅 Календар не синхронізований. <button class="link" data-a="gsync">Синхронізувати</button></p>`;
+ if(!calOn())return `<p class="meta">📅 ${CAL.err?'Помилка календаря: '+esc(CAL.err):'Завантажую події…'}</p>`;
+ return `<p class="meta">📅 ${CAL.ev.length?CAL.ev.map(e=>`${hm(e.s)}–${hm(e.e)} ${esc(e.n)}`).join(' · '):'Подій на сьогодні немає'}. Вільно до 22:00: ${fmtMin(Math.max(freeMin(),0))}.</p>`;
+}
+function gis(){
+ return new Promise((res,rej)=>{
+  if(window.google&&google.accounts&&google.accounts.oauth2)return res();
+  const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=()=>rej(Error('не вдалося завантажити скрипт Google'));document.head.append(s);
+ });
+}
+function gAuth(prompt){
+ return gis().then(()=>new Promise((res,rej)=>{
+  const sc='https://www.googleapis.com/auth/calendar.events'+(S.g.w?'':'.readonly');
+  const c=google.accounts.oauth2.initTokenClient({client_id:S.g.id,scope:sc,
+   callback:r=>{if(r.error)return rej(Error(r.error_description||r.error));gtok=r.access_token;gexp=Date.now()+(r.expires_in-60)*1000;res()},
+   error_callback:e=>rej(Error(e.type==='popup_closed'?'вікно входу закрито':e.type==='popup_failed_to_open'?'браузер заблокував вікно входу':e.type||'вхід не вдався'))});
+  c.requestAccessToken({prompt:prompt||''});
+ }));
+}
+async function gApi(path,o={}){
+ const r=await fx('https://www.googleapis.com/calendar/v3/'+path,{...o,headers:{Authorization:'Bearer '+gtok,'Content-Type':'application/json'}});
+ if(r.status===204)return{};
+ const j=await r.json().catch(()=>({}));
+ if(r.status===401)gtok='';
+ if(!r.ok)throw Error(j.error&&j.error.message||'HTTP '+r.status);
+ return j;
+}
+async function loadCal(){
+ if(!gok())return;
+ if(NATIVE)return loadCalNative();
+ const a=new Date();a.setHours(0,0,0,0);const b=new Date(a);b.setDate(b.getDate()+1);
+ try{
+  const j=await gApi('calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=50&timeMin='+encodeURIComponent(a.toISOString())+'&timeMax='+encodeURIComponent(b.toISOString()));
+  CAL.ev=(j.items||[]).filter(e=>e.status!=='cancelled'&&e.transparency!=='transparent'&&!(e.description||'').includes('mij-den')&&e.start&&e.start.dateTime&&!(e.attendees||[]).some(x=>x.self&&x.responseStatus==='declined')).map(e=>({s:new Date(e.start.dateTime),e:new Date(e.end.dateTime),n:e.summary||'(без назви)'}));
+  CAL.ok=true;CAL.d=today;CAL.err='';
+ }catch(e){CAL.err=e.message}
+ CAL.ts=Date.now();
+}
+async function gConnect(){
+ if(NATIVE)return ncConnect();
+ const id=$('#g-id').value.trim();if(!id)return toast('Вставте Client ID');
+ if(location.protocol==='file:')return toast('Вхід через Google не працює зі сторінки file://. Див. підказку вище.');
+ S.g={...S.g,id,w:$('#g-w').checked};save();
+ try{await gAuth('consent');S.g.on=true;save();await loadCal();R();toast(CAL.ok?'Календар підключено':'Підключено, але події не отримано: '+CAL.err)}
+ catch(e){toast('Не вдалося підключити: '+e.message)}
+}
+async function gSync(){if(NATIVE){await loadCalNative();R();return}try{if(!gok())await gAuth('');await loadCal();R()}catch(e){toast('Календар: '+e.message)}}
+function gDisconnect(){
+ if(NATIVE){S.nc.on=false;CAL.ev=[];CAL.ok=false;save();R();return}
+ try{if(gtok&&window.google)google.accounts.oauth2.revoke(gtok)}catch(e){}
+ gtok='';gexp=0;CAL.ev=[];CAL.ok=false;S.g.on=false;save();R();toast('Календар відключено');
+}
+async function gAdd(){
+ if(!saveTask(true))return;const t=editing;
+ if(!t.r)return toast('Вкажіть час нагадування: він стане часом події');
+ try{
+  if(!gok())await gAuth('');
+  let d=null;for(let k=0;k<400&&!d;k++){const x=new Date();x.setDate(x.getDate()+k);if(due(t,x))d=x}
+  if(!d)return toast('Не вдалося знайти дату початку');
+  const[h,m]=t.r.split(':').map(Number),st=new Date(d);st.setHours(h,m,0,0);
+  const en=new Date(st.getTime()+TM[t.tm]*60000),tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const fmt=x=>ymd(x)+'T'+pad(x.getHours())+':'+pad(x.getMinutes())+':00';
+  const rr={day:'FREQ=DAILY',week:'FREQ=WEEKLY;BYDAY='+['SU','MO','TU','WE','TH','FR','SA'][t.w],month:'FREQ=MONTHLY;BYMONTHDAY='+(+t.w===31?-1:+t.w),year:'FREQ=YEARLY'}[t.f];
+  const body=JSON.stringify({summary:t.n,description:'[mij-den] Складність: '+DL[t.d]+(t.s.length?'\n\nКроки:\n'+t.s.map(x=>'• '+x).join('\n'):''),start:{dateTime:fmt(st),timeZone:tz},end:{dateTime:fmt(en),timeZone:tz},recurrence:['RRULE:'+rr],reminders:{useDefault:false,overrides:[{method:'popup',minutes:0}]}});
+  let ev;
+  if(t.ge){try{ev=await gApi('calendars/primary/events/'+t.ge,{method:'PATCH',body})}catch(e){t.ge=''}}
+  if(!t.ge)ev=await gApi('calendars/primary/events',{method:'POST',body});
+  t.ge=ev.id;save();toast('Задачу збережено в Google Calendar');
+ }catch(e){toast('Календар: '+e.message)}
+}
+function gSet(){
+ if(NATIVE)return nSet();
+ const G=S.g,fp=location.protocol==='file:';
+ return `<h2>Google Calendar</h2>
+ ${fp?`<div class="warn"><b>Файл відкрито напряму.</b> Google не дозволяє вхід зі сторінок file://. Запустіть у папці з файлом команду <code>python3 -m http.server 8000</code> і відкрийте <code>http://localhost:8000/mij-den.html</code>.</div>`:''}
+ <p class="meta">Застосунок читає ваші події на сьогодні, скорочує підбірку, якщо вільного часу мало, і показує збіги подій із часом задач. Події лишаються в памʼяті сторінки й нікуди не передаються, зокрема ШІ.</p>
+ <label>OAuth Client ID</label><input id="g-id" value="${esc(G.id)}" autocomplete="off" placeholder="…apps.googleusercontent.com">
+ <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input id="g-w" type="checkbox" style="width:auto" ${G.w?'checked':''}> Дозволити додавати задачі в календар (право на запис)</label>
+ <div class="acts"><button class="btn" data-a="gcon">${G.on?'Перепідключити':'Підключити'}</button>${G.on?`<button class="ghost" data-a="gsync">Оновити події</button><button class="ghost" data-a="gdis">Відключити</button>`:''}</div>
+ <p class="meta">Статус: ${!G.on?'не підключено':gok()?(calOn()?`підключено, подій сьогодні: ${CAL.ev.length}`:'підключено, події не завантажені'+(CAL.err?': '+esc(CAL.err):'')):'потрібна синхронізація (кнопка «Оновити події»)'}</p>
+ <details><summary>Як отримати Client ID</summary><ol>
+ <li>У Google Cloud Console створіть проєкт.</li>
+ <li>У бібліотеці API увімкніть Google Calendar API.</li>
+ <li>На екрані згоди OAuth оберіть тип External і додайте власну пошту в тестові користувачі.</li>
+ <li>У розділі облікових даних створіть OAuth client ID типу Web application. У Authorized JavaScript origins додайте адресу, з якої відкриваєте застосунок, наприклад <code>http://localhost:8000</code>.</li>
+ <li>Скопіюйте Client ID сюди. Секрет не потрібен.</li>
+ <li>Доступ дається приблизно на годину, потім натисніть «Синхронізувати». У режимі тестування за документацією вхід спливає через 7 днів. Це прибирає перехід застосунку в режим «In production» без верифікації, але Google покаже попередження про неперевірений застосунок.</li>
+ </ol></details>`;
+}
+// ---- Android (Capacitor) ----
+const NS={perm:'',exact:'',pending:0};
+let CALS=[],chOK=false,sst;
+function schedSoon(){if(!NATIVE)return;clearTimeout(sst);sst=setTimeout(rescheduleNative,800)}
+async function ensureChannel(){
+ if(chOK)return;
+ await NP.LocalNotifications.createChannel({id:'reminders',name:'Нагадування про задачі',importance:4,visibility:1,vibration:true});
+ chOK=true;
+}
+async function refreshNS(){
+ const LN=NP.LocalNotifications;
+ try{NS.perm=(await LN.checkPermissions()).display}catch(e){}
+ try{NS.exact=(await LN.checkExactNotificationSetting()).exact_alarm}catch(e){}
+ try{NS.pending=(await LN.getPending()).notifications.length}catch(e){}
+}
+// Планує сповіщення на 14 днів уперед. Задачі з однаковим часом зводяться в одне сповіщення.
+async function rescheduleNative(){
+ if(!NATIVE)return;
+ try{
+  const LN=NP.LocalNotifications;
+  const p=await LN.checkPermissions();NS.perm=p.display;
+  if(p.display!=='granted')return;
+  await ensureChannel();
+  const pend=await LN.getPending();
+  if(pend.notifications.length)await LN.cancel({notifications:pend.notifications.map(n=>({id:n.id}))});
+  const now=new Date(),G={};
+  for(let k=0;k<14;k++){
+   const d=new Date(now);d.setDate(d.getDate()+k);
+   for(const t of S.tasks){
+    if(!t.r)continue;
+    const ok=k===0?(act(t)&&!isDone(t)&&!isSkip(t)):(due(t,d)||late(t,d)>0);
+    if(!ok)continue;
+    const[h,m]=t.r.split(':').map(Number),at=new Date(d.getFullYear(),d.getMonth(),d.getDate(),h,m);
+    if(at<=now)continue;
+    (G[at.getTime()]=G[at.getTime()]||[]).push(t);
+   }
+  }
+  const list=Object.keys(G).map(Number).sort((a,b)=>a-b).slice(0,150).map(ts=>{
+   const L=G[ts].sort((a,b)=>b.i-a.i);
+   return{id:Math.floor(ts/60000)%2147483647,
+    title:L.length===1?L[0].n:'Нагадування: задач '+L.length,
+    body:L.length===1?TL[L[0].tm]+', ~'+TM[L[0].tm]+' хв':L.map(x=>x.n).join(', '),
+    schedule:{at:new Date(ts),allowWhileIdle:true},channelId:'reminders',smallIcon:'ic_stat_myday'};
+  });
+  if(list.length)await LN.schedule({notifications:list});
+  NS.pending=list.length;
+ }catch(e){console.error(e)}
+}
+async function nPerm(){
+ const LN=NP.LocalNotifications;
+ try{
+  await LN.requestPermissions();
+  let ex=null;try{ex=await LN.checkExactNotificationSetting()}catch(e){}
+  if(ex&&ex.exact_alarm&&ex.exact_alarm!=='granted'){toast('Увімкніть для застосунку «Будильники й нагадування»');await LN.changeExactNotificationSetting()}
+  await refreshNS();await rescheduleNative();R();
+ }catch(e){toast('Сповіщення: '+e.message)}
+}
+async function nTest(){
+ try{
+  await ensureChannel();
+  await NP.LocalNotifications.schedule({notifications:[{id:1,title:'Мій день',body:'Тестове нагадування працює',schedule:{at:new Date(Date.now()+10000),allowWhileIdle:true},channelId:'reminders',smallIcon:'ic_stat_myday'}]});
+  toast('Закрийте застосунок: нагадування прийде за 10 секунд');
+ }catch(e){toast('Помилка: '+e.message)}
+}
+async function initNative(){
+ try{
+  await ensureChannel();
+  let p=await NP.LocalNotifications.checkPermissions();
+  if(p.display==='prompt'||p.display==='prompt-with-rationale')p=await NP.LocalNotifications.requestPermissions();
+  await refreshNS();await rescheduleNative();
+ }catch(e){toast('Сповіщення: '+e.message)}
+ if(S.nc.on){await loadCalNative();R()}
+}
+function remSet(){
+ if(!NATIVE){
+  const np='Notification' in window?Notification.permission:'unsupported';
+  return `<h2>Нагадування</h2>
+ <p class="meta">Стан дозволу: ${np}. У браузері нагадування спрацьовують, лише поки сторінка відкрита. Надійні нагадування працюють в Android-версії.</p>
+ <div class="acts"><button class="ghost" data-a="perm">Дозволити сповіщення</button></div>`;
+ }
+ return `<h2>Нагадування</h2>
+ <p class="meta">Дозвіл на сповіщення: ${esc(NS.perm||'невідомо')}. Точні будильники: ${esc(NS.exact||'невідомо')}. Заплановано сповіщень: ${NS.pending}. Їх планується на 14 днів уперед, і список оновлюється, коли ви відкриваєте застосунок або змінюєте задачі.</p>
+ <div class="acts"><button class="ghost" data-a="perm">Перевірити дозволи</button><button class="ghost" data-a="ntest">Тест за 10 секунд</button></div>
+ <p class="meta">Якщо нагадування запізнюються або не приходять, у налаштуваннях телефона для цього застосунку оберіть режим батареї «Без обмежень» і, якщо виробник це вимагає, дозвольте автозапуск.</p>`;
+}
+// календар телефону
+async function listCalNative(){
+ const{result}=await NP.CapacitorCalendar.listCalendars();
+ CALS=(result||[]).filter(c=>c.visible!==false);
+}
+async function loadCalNative(){
+ try{
+  const C=NP.CapacitorCalendar;
+  const pm=await C.checkPermission({scope:'readCalendar'});
+  if(pm.result!=='granted'){CAL.ok=false;CAL.err='немає дозволу на календар';CAL.ts=Date.now();return}
+  if(!CALS.length)await listCalNative();
+  const a=new Date();a.setHours(0,0,0,0);const b=new Date(a);b.setDate(b.getDate()+1);
+  const{result}=await C.listEventsInRange({from:a.getTime(),to:b.getTime()});
+  const byId={};CALS.forEach(c=>byId[String(c.id)]=c);
+  const seen=new Set();
+  CAL.ev=(result||[]).filter(e=>{
+   if(e.isAllDay||e.status==='canceled'||e.availability===1)return false;
+   if(!S.nc.ids.includes(String(e.calendarId)))return false;
+   if((e.description||'').includes('mij-den'))return false;
+   const me=String((byId[String(e.calendarId)]||{}).accountName||'').toLowerCase();
+   if(me&&(e.attendees||[]).some(x=>x.status==='declined'&&String(x.email||'').toLowerCase()===me))return false;
+   const key=(e.title||'')+'|'+e.startDate+'|'+e.endDate;
+   if(seen.has(key))return false;seen.add(key);return true;
+  }).map(e=>({s:new Date(e.startDate),e:new Date(e.endDate),n:e.title||'(без назви)'})).sort((x,y)=>x.s-y.s);
+  CAL.ok=true;CAL.d=today;CAL.err='';
+ }catch(e){CAL.err=e.message}
+ CAL.ts=Date.now();
+}
+async function ncConnect(){
+ try{
+  const r=await NP.CapacitorCalendar.requestFullCalendarAccess();
+  if(r.result!=='granted')return toast('Без дозволу на календар підключення неможливе');
+  S.nc.on=true;await listCalNative();
+  if(!S.nc.ids.length)S.nc.ids=CALS.filter(c=>!/holiday|contacts|#/i.test(c.ownerAccount||'')).map(c=>String(c.id));
+  save();await loadCalNative();R();
+  toast(CAL.ok?'Календар підключено':'Підключено, але події не отримано: '+CAL.err);
+ }catch(e){toast('Не вдалося підключити календар: '+e.message)}
+}
+function nSet(){
+ const N=S.nc;
+ const cl=CALS.length?CALS.map(c=>`<label style="display:flex;gap:8px;align-items:center;color:var(--ink);margin:6px 0"><input type="checkbox" style="width:auto" data-ch="ncal" data-id="${esc(c.id)}" ${N.ids.includes(String(c.id))?'checked':''}><span>${esc(c.title)}${c.accountName?` <span class="meta">(${esc(c.accountName)})</span>`:''}</span></label>`).join(''):'<p class="meta">Календарів не знайдено.</p>';
+ return `<h2>Календар телефону</h2>
+ <p class="meta">Застосунок читає календарі, які вже синхронізовані з телефоном, зокрема з усіх ваших акаунтів, без входу через Google. Події лишаються на пристрої й не передаються ШІ.</p>
+ <div class="acts"><button class="btn" data-a="gcon">${N.on?'Оновити дозвіл і список':'Підключити календар'}</button>${N.on?'<button class="ghost" data-a="gsync">Оновити події</button><button class="ghost" data-a="gdis">Відключити</button>':''}</div>
+ ${N.on?`<label>Які календарі враховувати</label>${cl}
+ <label>Календар для запису задач</label><select data-ch="nwr"><option value="">— не записувати —</option>${CALS.map(c=>`<option value="${esc(c.id)}" ${String(c.id)===N.wid?'selected':''}>${esc(c.title)}${c.accountName?' · '+esc(c.accountName):''}</option>`).join('')}</select>
+ <p class="meta">Статус: ${calOn()?'подій сьогодні: '+CAL.ev.length:esc(CAL.err||'події не завантажені')}. Якщо та сама зустріч є у двох календарях, вона враховується один раз.</p>`:''}`;
+}
+async function ncAdd(){
+ if(!saveTask(true))return;const t=editing;
+ if(!t.r)return toast('Вкажіть час нагадування: він стане часом події');
+ if(!S.nc.wid)return toast('Оберіть календар для запису в налаштуваннях');
+ try{
+  const C=NP.CapacitorCalendar;
+  const r=await C.requestFullCalendarAccess();if(r.result!=='granted')return toast('Потрібен дозвіл на календар');
+  if(t.ne){try{await C.deleteEvent({id:t.ne})}catch(e){}t.ne=''}
+  let d=null;for(let k=0;k<400&&!d;k++){const x=new Date();x.setDate(x.getDate()+k);if(due(t,x))d=x}
+  if(!d)return toast('Не вдалося знайти дату початку');
+  const[h,m]=t.r.split(':').map(Number),st=new Date(d);st.setHours(h,m,0,0);
+  const mins=TM[t.tm],en=new Date(st.getTime()+mins*60000);
+  const rec={day:{frequency:'daily'},week:{frequency:'weekly',byWeekDay:[+t.w===0?7:+t.w]},month:{frequency:'monthly',byMonthDay:[+t.w]},year:{frequency:'yearly'}}[t.f];
+  const base={title:t.n,calendarId:String(S.nc.wid),startDate:st.getTime(),alerts:[0],recurrence:rec,
+   description:'[mij-den] Складність: '+DL[t.d]+(t.s.length?'\n\nКроки:\n'+t.s.map(x=>'• '+x).join('\n'):'')};
+  let ev;
+  try{ev=await C.createEvent({...base,endDate:en.getTime()})}catch(e1){ev=await C.createEvent({...base,duration:'PT'+mins+'M'})}
+  t.ne=ev.id;save();toast('Задачу записано в календар телефону');
+ }catch(e){toast('Календар: '+e.message)}
+}
+function delEvt(t){
+ if(NATIVE){if(t.ne)NP.CapacitorCalendar.deleteEvent({id:t.ne}).catch(()=>{});return}
+ if(t.ge&&S.g.w&&gok())gApi('calendars/primary/events/'+t.ge,{method:'DELETE'}).catch(()=>{});
+}
+async function exportData(){
+ const json=JSON.stringify({...S,ai:{...S.ai,key:''}},null,1);
+ if(NATIVE){
+  try{
+   const name='mij-den-backup-'+today+'.json';
+   const r=await NP.Filesystem.writeFile({path:name,data:json,directory:NP.Directory.Cache,encoding:NP.Encoding.UTF8});
+   await NP.Share.share({title:'Резервна копія «Мій день»',files:[r.uri]});
+  }catch(e){if(!/cancel/i.test(e.message))toast('Не вдалося поділитися файлом: '+e.message)}
+  return;
+ }
+ const x=document.createElement('a');x.href=URL.createObjectURL(new Blob([json],{type:'application/json'}));x.download='mij-den-backup.json';x.click();
+}
+// ---- events ----
+document.addEventListener('click',async e=>{
+ const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,id=b.dataset.id;
+ if(a==='tab'){tab=b.dataset.v;R()}
+ else if(a==='ci'){draft[b.dataset.k]=+b.dataset.v;R()}
+ else if(a==='ciok'){S.ci[today]={m:draft.m,e:draft.e,t:draft.t};editCi=false;save();R()}
+ else if(a==='ciskip'){S.ci[today]={m:2,e:3,t:480,skip:1};editCi=false;save();R()}
+ else if(a==='cichange'){draft={...S.ci[today]};editCi=true;R()}
+ else if(a==='done'){const t=find(id),k=t.dn.indexOf(today);k<0?t.dn.push(today):t.dn.splice(k,1);t.dn=t.dn.slice(-60);t.sk=(t.sk||[]).filter(x=>x!==today);save();R()}
+ else if(a==='skip'){const t=find(id);t.sk=(t.sk||[]).concat(today).slice(-60);save();R();toast('Пропущено. Наступного разу задача зʼявиться за розкладом')}
+ else if(a==='unskip'){const t=find(id);t.sk=(t.sk||[]).filter(x=>x!==today);save();R()}
+ else if(a==='all'){showAll=!showAll;R()}
+ else if(a==='new')openEdit('');
+ else if(a==='edit')openEdit(id);
+ else if(a==='est')estimate(b);
+ else if(a==='save')saveTask();
+ else if(a==='close')$('#dlg').close();
+ else if(a==='del'){if(confirm('Видалити задачу?')){delEvt(editing);S.tasks=S.tasks.filter(x=>x!==editing);save();$('#dlg').close();R()}}
+ else if(a==='saveai'||a==='testai'){
+  S.ai={...S.ai,p:'gemini',key:$('#s-k').value.trim(),model:$('#s-m').value.trim()};save();
+  if(a==='saveai')return toast('Збережено');
+  try{const r=await askAI('Помити посуд','day');toast('Модель '+S.ai.model+' працює: тест дав оцінку '+TL[r.tm]+', '+DL[r.d])}catch(err){toast(err.message==='HTTP 429'?'Ліміт цієї моделі вичерпано або вона недоступна на вашому тарифі. Оберіть іншу.':err.message==='HTTP 404'?'Такої моделі немає. Оберіть іншу зі списку.':'Помилка: '+err.message+'. Перевірте ключ і модель.')}
+ }
+ else if(a==='models')loadModels(b);
+ else if(a==='gcon')gConnect();
+ else if(a==='gsync')gSync();
+ else if(a==='gdis')gDisconnect();
+ else if(a==='gadd')(NATIVE?ncAdd():gAdd());
+ else if(a==='ntest')nTest();
+ else if(a==='perm'){if(NATIVE)return nPerm();if(!('Notification' in window))return toast('Браузер не підтримує сповіщення');await Notification.requestPermission();R()}
+ else if(a==='exp')exportData();
+ else if(a==='reset'){if(confirm('Замінити всі задачі стандартними шаблонами?')){S.tasks=seed();save();R()}}
+});
+document.addEventListener('change',e=>{
+ const k=e.target.dataset.ch;
+ if(k==='ncal'){const id=e.target.dataset.id,a=S.nc.ids.filter(x=>x!==id);if(e.target.checked)a.push(id);S.nc.ids=a;save();loadCalNative().then(()=>R())}
+ else if(k==='nwr'){S.nc.wid=e.target.value;save();R()}
+ else if(k==='mlsel'){const v=e.target.value;if(v){$('#s-m').value=v;S.ai.model=v;save();toast('Обрано модель '+v)}}
+ else if(k==='freq'){const f=e.target.value;$('#f-wb').innerHTML=whenField(f,{week:'1',month:'1',year:'01-01'}[f]||'')}
+ else if(k==='hint')hint();
+ else if(e.target.id==='imp'){const f=e.target.files[0];if(!f)return;f.text().then(x=>{try{const d=JSON.parse(x);if(!Array.isArray(d.tasks))throw 0;S={...S,...d,ai:S.ai,g:S.g};save();R();toast('Дані імпортовано')}catch(err){toast('Файл не схожий на резервну копію')}})}
+});
+$('#dlg').addEventListener('input',e=>{if(e.target.id==='f-s')hint()});
+load();migrate();if(S.g.id&&!NATIVE)gis().catch(()=>{});R();tick();setInterval(tick,20000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){tick();schedSoon()}});
+if(NATIVE)initNative();
+</script></body></html>

@@ -1,0 +1,70 @@
+name: Збірка APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      KS64: ${{ secrets.KEYSTORE_BASE64 }}
+      KSPASS: ${{ secrets.KEYSTORE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Встановити залежності
+        run: npm install --no-audit --no-fund
+
+      - name: Зібрати веб-частину
+        run: node scripts/build-web.mjs
+
+      - name: Додати платформу Android
+        run: |
+          npx cap add android
+          python3 scripts/patch-android.py ${{ github.run_number }}
+          npx cap sync android
+
+      - name: Прийняти ліцензії Android SDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Зібрати APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          if [ -n "$KS64" ]; then
+            ./gradlew assembleRelease --no-daemon --stacktrace
+          else
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          fi
+
+      - name: Підписати APK
+        run: |
+          set -e
+          if [ -n "$KS64" ]; then
+            echo "$KS64" | base64 -d > "$RUNNER_TEMP/my.keystore"
+            BT=$(ls -d "$ANDROID_HOME"/build-tools/* | grep -v -- '-rc' | sort -V | tail -1)
+            "$BT/zipalign" -p -f 4 android/app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/aligned.apk"
+            "$BT/apksigner" sign --ks "$RUNNER_TEMP/my.keystore" --ks-key-alias myday \
+              --ks-pass env:KSPASS --key-pass env:KSPASS --out MyDay.apk "$RUNNER_TEMP/aligned.apk"
+            "$BT/apksigner" verify --print-certs MyDay.apk | head -3
+          else
+            cp android/app/build/outputs/apk/debug/app-debug.apk MyDay.apk
+            echo "::warning::Ключ підпису не налаштовано. APK підписано тимчасовим ключем, оновлення поверх такої версії не спрацюють. Див. SETUP.md, крок 5."
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MyDay-apk
+          path: MyDay.apk
+          retention-days: 30
