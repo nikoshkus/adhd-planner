@@ -507,6 +507,22 @@ async function listCalNative(){
  const{result}=await NP.CapacitorCalendar.listCalendars();
  CALS=(result||[]).filter(c=>c.visible!==false);
 }
+// ISO-тривалість події ("PT1H30M", "P1D") у мілісекундах
+function parseDur(d){
+ const m=/^P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(String(d||''));
+ if(!m)return 0;
+ return(((+m[1]||0)*7+(+m[2]||0))*24*3600+(+m[3]||0)*3600+(+m[4]||0)*60+(+m[5]||0))*1000;
+}
+// Для повторюваних подій календар повертає дату початку серії (наприклад, червень), а не сьогоднішню.
+// Беремо час доби з події й ставимо його на сьогодні.
+function evTimes(e,a,b){
+ let s=new Date(e.startDate);
+ const en=e.endDate?new Date(e.endDate):null;
+ let dur=en&&en>s?en-s:parseDur(e.duration);
+ if(!dur||dur<=0)dur=3600000;
+ if(s.getTime()+dur<=a.getTime()||s>=b){const t=new Date(a);t.setHours(s.getHours(),s.getMinutes(),0,0);s=t}
+ return{s,e:new Date(s.getTime()+dur)};
+}
 async function loadCalNative(){
  try{
   const C=NP.CapacitorCalendar;
@@ -523,9 +539,11 @@ async function loadCalNative(){
    if((e.description||'').includes('mij-den'))return false;
    const me=String((byId[String(e.calendarId)]||{}).accountName||'').toLowerCase();
    if(me&&(e.attendees||[]).some(x=>x.status==='declined'&&String(x.email||'').toLowerCase()===me))return false;
-   const key=(e.title||'')+'|'+e.startDate+'|'+e.endDate;
-   if(seen.has(key))return false;seen.add(key);return true;
-  }).map(e=>({s:new Date(e.startDate),e:new Date(e.endDate),n:e.title||'(без назви)'})).sort((x,y)=>x.s-y.s);
+   return true;
+  }).map(e=>{const t=evTimes(e,a,b);return{s:t.s,e:t.e,n:e.title||'(без назви)'}})
+   .filter(x=>x.e>a&&x.s<b)
+   .filter(x=>{const key=x.n+'|'+x.s.getTime()+'|'+x.e.getTime();if(seen.has(key))return false;seen.add(key);return true})
+   .sort((x,y)=>x.s-y.s);
   CAL.ok=true;CAL.d=today;CAL.err='';
  }catch(e){CAL.err=e.message}
  CAL.ts=Date.now();
