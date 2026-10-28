@@ -1,0 +1,47 @@
+:root{color-scheme:light dark;--bg:#edf1f5;--sf:#fff;--ink:#1c2733;--mut:#586878;--ac:#27418f;--wa:#a4510a;--was:#fbeedd;--ln:#d3dce5;--i1:#b9c4cf;--i2:#7f95ad;--i3:#d98a1c;--i4:#c2392b}
+@media(prefers-color-scheme:dark){:root{--bg:#12181f;--sf:#1a222b;--ink:#e6edf3;--mut:#93a3b3;--ac:#8ea6ff;--wa:#f0a860;--was:#3a2a17;--ln:#2b3642;--i1:#4a5866;--i2:#6f86a0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{max-width:640px;margin:0 auto;padding:calc(20px + var(--safe-area-inset-top,env(safe-area-inset-top,0px))) 16px calc(64px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}
+h1{font-size:30px;line-height:1.15;margin:8px 0 2px;letter-spacing:-.02em}
+h2{font-size:18px;margin:26px 0 10px}
+.dt{color:var(--mut);margin:0 0 16px;text-transform:capitalize}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--ln);margin-bottom:20px}
+nav button{background:none;border:0;padding:10px 12px;font:inherit;color:var(--mut);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+nav button[aria-selected=true]{color:var(--ink);border-color:var(--ac);font-weight:600}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:999px;padding:10px 16px;font:inherit;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--ac);border-color:var(--ac);color:var(--sf)}
+.btn{background:var(--ac);color:var(--sf);border:0;border-radius:10px;padding:11px 18px;font:inherit;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.ghost{background:none;border:1.5px solid var(--ln);color:var(--ink);border-radius:10px;padding:9px 14px;font:inherit;cursor:pointer}
+.link{background:none;border:0;color:var(--ac);font:inherit;cursor:pointer;text-decoration:underline;padding:0}
+ul{list-style:none;margin:0;padding:0}
+.row{display:flex;gap:12px;align-items:flex-start;padding:12px 12px 12px 14px;background:var(--sf);border-left:5px solid var(--i1);margin-bottom:8px;border-radius:0 10px 10px 0}
+.i2{border-color:var(--i2)}.i3{border-color:var(--i3)}.i4{border-color:var(--i4)}
+.bd{flex:1;min-width:0}
+.ck{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--mut);background:none;cursor:pointer;color:transparent;font-size:16px;line-height:1;padding:0}
+.dn .ck{background:var(--ac);border-color:var(--ac);color:var(--sf)}
+.dn b{text-decoration:line-through;color:var(--mut)}
+.tm{font-variant-numeric:tabular-nums;color:var(--ac);margin-right:8px}
+.sk{opacity:.6}
+code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:14px}
+.late{color:var(--wa);font-weight:600}
+.meta{color:var(--mut);font-size:14px}
+details{font-size:14px;color:var(--mut);margin-top:4px}
+details ul{list-style:disc;padding-left:20px}
+.bar{display:flex;gap:3px;height:12px;margin:12px 0 4px}
+.bar i{background:var(--ac);border-radius:3px;min-width:6px}
+.bar u{background:var(--ln);border-radius:3px}
+.warn{background:var(--was);border-left:5px solid var(--wa);padding:10px 14px;border-radius:0 10px 10px 0;margin:8px 0}
+.warn b{color:var(--wa)}
+.sum{color:var(--mut);margin:0}
+dialog{border:0;border-radius:14px;padding:20px;width:min(520px,94vw);background:var(--sf);color:var(--ink)}
+dialog::backdrop{background:#0008}
+label{display:block;font-size:14px;color:var(--mut);margin:12px 0 4px}
+input,select,textarea{width:100%;font:inherit;padding:9px 10px;border:1.5px solid var(--ln);border-radius:8px;background:var(--bg);color:var(--ink)}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+#toast{position:fixed;left:0;right:0;top:calc(12px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)));display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 12px;z-index:9}
+.t{background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;max-width:520px}

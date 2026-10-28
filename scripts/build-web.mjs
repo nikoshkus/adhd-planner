@@ -1,4 +1,4 @@
-// Збирає веб-частину в папку www: JS для нативних плагінів + сам застосунок.
+// Збирає веб-частину в папку www: нативні плагіни + застосунок
 import { build } from 'esbuild';
 import { mkdirSync, copyFileSync } from 'node:fs';
 
@@ -10,6 +10,8 @@ await build({
   outfile: 'www/native.js',
   minify: true,
   target: 'es2020',
+  external: ['@capacitor/*'],
 });
 copyFileSync('src/index.html', 'www/index.html');
+try { copyFileSync('src/styles.css', 'www/style.css'); } catch(e) {}
 console.log('Веб-частину зібрано у www/');

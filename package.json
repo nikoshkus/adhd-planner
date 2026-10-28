@@ -8,9 +8,11 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
+    "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.0.0",
     "@capacitor/filesystem": "^8.0.0",
     "@capacitor/local-notifications": "^8.0.0",
+    "@capacitor/preferences": "^8.0.1",
     "@capacitor/share": "^8.0.0",
     "@ebarooni/capacitor-calendar": "^8.2.0"
   },
