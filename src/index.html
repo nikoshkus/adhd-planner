@@ -135,7 +135,7 @@ function vSet(){
  <div class="acts"><button class="ghost" data-a="models">Знайти безкоштовні моделі</button></div>
  <p class="meta">Розраховано на безкоштовний тариф. Для Gemini застосунок перевіряє кожну модель коротким тестовим запитом і залишає ті, що відповідають. Це забирає кілька запитів із денного ліміту. Якщо ліміт моделі вичерпано, застосунок спробує іншу зі списку, а потім просту оцінку.</p>
  <div class="acts"><button class="btn" data-a="saveai">Зберегти</button><button class="ghost" data-a="testai">Перевірити</button></div>
- ${NATIVE?nSet():''}
+ ${gSet()}
  ${remSet()}
  <h2>Дані</h2>
  <div class="acts"><button class="ghost" data-a="exp">Експорт у файл</button><label class="ghost" style="margin:0;cursor:pointer;color:var(--ink)">Імпорт<input id="imp" type="file" accept="application/json,.json" hidden></label><button class="ghost" data-a="reset">Скинути шаблони</button></div>`;
@@ -257,13 +257,15 @@ async function loadModels(btn){
   S.ai={...S.ai,...A,models:L,mp:A.p};save();R();toast(L.length?(A.p==='gemini'?`Доступно на безкоштовному тарифі: ${L.length}`:`Доступних моделей: ${L.length}`):'Жодна модель не відповіла. Перевірте ключ.');
  }catch(e){toast('Не вдалося отримати список: '+e.message)}finally{btn.disabled=false;btn.textContent=old}
 }
-// ---- Google Calendar ----
+// ---- Calendar ----
 const hm=d=>pad(d.getHours())+':'+pad(d.getMinutes());
 const fmtMin=m=>Math.floor(m/60)+' год '+m%60+' хв';
 const mmDay=d=>{const n=new Date();return d.toDateString()===n.toDateString()?d.getHours()*60+d.getMinutes():d>n?1440:0};
 const CAL={ev:[],ok:false,d:'',ts:0,err:''};
-const calEnabled=()=>NATIVE?!!S.nc.on:false;
-const canWrite=()=>NATIVE?!!(S.nc.on&&S.nc.wid):false;
+let gtok='',gexp=0;
+const calEnabled=()=> (NATIVE&&(S.nc&&S.nc.on)) || (S.g&&S.g.on);
+const canWrite=()=>(NATIVE&&(S.nc&&S.nc.on&&S.nc.wid)) || (S.g&&S.g.on&&S.g.w);
+const gok=()=>NATIVE?(!!(S.nc&&S.nc.on)):!!gtok&&Date.now()<gexp;
 const calOn=()=>CAL.ok&&CAL.d===today;
 function freeMin(){
  const n=new Date(),from=Math.max(n.getHours()*60+n.getMinutes(),7*60),to=22*60;if(from>=to)return 0;
@@ -277,9 +279,96 @@ function clash(t){
  return CAL.ev.find(x=>mmDay(x.s)<e&&mmDay(x.e)>s)||null;
 }
 function calLine(){
- if(!NATIVE||!calEnabled())return '';
+ if(!calEnabled())return '';
+ if(!gok() && !(NATIVE&&S.nc&&S.nc.on))return `<p class="meta">📅 Календар не синхронізований. <button class="link" data-a="gsync">Синхронізувати</button></p>`;
  if(!calOn())return `<p class="meta">📅 ${CAL.err?'Помилка календаря: '+esc(CAL.err):'Завантажую події…'}</p>`;
  return `<p class="meta">📅 ${CAL.ev.length?CAL.ev.map(e=>`${hm(e.s)}–${hm(e.e)} ${esc(e.n)}`).join(' · '):'Подій на сьогодні немає'}. Вільно до 22:00: ${fmtMin(Math.max(freeMin(),0))}.</p>`;
+}
+function gis(){
+ return new Promise((res,rej)=>{
+  if(window.google&&google.accounts&&google.accounts.oauth2)return res();
+  const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=()=>rej(Error('не вдалося завантажити скрипт Google'));document.head.append(s);
+ });
+}
+function gAuth(prompt){
+ return gis().then(()=>new Promise((res,rej)=>{
+  if(!S.g||!S.g.id)return rej(Error('Вкажіть Client ID'));
+  const sc='https://www.googleapis.com/auth/calendar.events'+(S.g.w?'':'.readonly');
+  const c=google.accounts.oauth2.initTokenClient({client_id:S.g.id,scope:sc,
+   callback:r=>{if(r.error)return rej(Error(r.error_description||r.error));gtok=r.access_token;gexp=Date.now()+(r.expires_in-60)*1000;res()},
+   error_callback:e=>rej(Error(e.type==='popup_closed'?'вікно входу закрито':e.type==='popup_failed_to_open'?'браузер заблокував вікно входу':e.type||'вхід не вдався'))});
+  c.requestAccessToken({prompt:prompt||''});
+ }));
+}
+async function gApi(path,o={}){
+ const r=await fx('https://www.googleapis.com/calendar/v3/'+path,{...o,headers:{Authorization:'Bearer '+gtok,'Content-Type':'application/json'}});
+ if(r.status===204)return{};
+ const j=await r.json().catch(()=>({}));
+ if(r.status===401)gtok='';
+ if(!r.ok)throw Error(j.error&&j.error.message||'HTTP '+r.status);
+ return j;
+}
+async function loadCal(){
+ if(NATIVE && S.nc && S.nc.on){return loadCalNative();}
+ if(!gok())return;
+ const a=new Date();a.setHours(0,0,0,0);const b=new Date(a);b.setDate(b.getDate()+1);
+ try{
+  const j=await gApi('calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=50&timeMin='+encodeURIComponent(a.toISOString())+'&timeMax='+encodeURIComponent(b.toISOString()));
+  CAL.ev=(j.items||[]).filter(e=>e.status!=='cancelled'&&e.transparency!=='transparent'&&!(e.description||'').includes('mij-den')&&e.start&&e.start.dateTime&&!(e.attendees||[]).some(x=>x.self&&x.responseStatus==='declined')).map(e=>({s:new Date(e.start.dateTime),e:new Date(e.end.dateTime),n:e.summary||'(без назви)'}));
+  CAL.ok=true;CAL.d=today;CAL.err='';
+ }catch(e){CAL.err=e.message}
+ CAL.ts=Date.now();
+}
+async function gConnect(){
+ if(NATIVE && (!S.g||!S.g.id)){
+  // prefer native calendar on Android if no Google configured
+  return ncConnect();
+ }
+ const id=$('#g-id').value.trim();if(!id)return toast('Вставте Client ID');
+ if(!S.g)S.g={};S.g={...S.g,id,w:$('#g-w').checked};save();
+ try{await gAuth('consent');S.g.on=true;save();await loadCal();R();toast(CAL.ok?'Календар підключено':'Підключено, але події не отримано: '+CAL.err)}
+ catch(e){toast('Не вдалося підключити: '+e.message)}
+}
+async function gSync(){
+ if(NATIVE && S.nc && S.nc.on){await loadCalNative();R();return}
+ try{if(!gok())await gAuth('');await loadCal();R()}catch(e){toast('Календар: '+e.message)}
+}
+function gDisconnect(){
+ if(NATIVE && S.nc && S.nc.on){S.nc.on=false;CAL.ev=[];CAL.ok=false;save();R();return}
+ try{if(gtok&&window.google)google.accounts.oauth2.revoke(gtok)}catch(e){}
+ gtok='';gexp=0;CAL.ev=[];CAL.ok=false;if(S.g)S.g.on=false;save();R();toast('Календар відключено');
+}
+async function gAdd(){
+ if(!saveTask(true))return;const t=editing;
+ if(!t.r)return toast('Вкажіть час нагадування: він стане часом події');
+ try{
+  if(NATIVE && S.nc && S.nc.on)return ncAdd();
+  if(!gok())await gAuth('');
+  let d=null;for(let k=0;k<400&&!d;k++){const x=new Date();x.setDate(x.getDate()+k);if(due(t,x))d=x}
+  if(!d)return toast('Не вдалося знайти дату початку');
+  const[h,m]=t.r.split(':').map(Number),st=new Date(d);st.setHours(h,m,0,0);
+  const en=new Date(st.getTime()+TM[t.tm]*60000),tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const fmt=x=>ymd(x)+'T'+pad(x.getHours())+':'+pad(x.getMinutes())+':00';
+  const rr={day:'FREQ=DAILY',week:'FREQ=WEEKLY;BYDAY='+['SU','MO','TU','WE','TH','FR','SA'][t.w],month:'FREQ=MONTHLY;BYMONTHDAY='+(+t.w===31?-1:+t.w),year:'FREQ=YEARLY'}[t.f];
+  const body=JSON.stringify({summary:t.n,description:'[mij-den] Складність: '+DL[t.d]+(t.s.length?'\n\nКроки:\n'+t.s.map(x=>'• '+x).join('\n'):''),start:{dateTime:fmt(st),timeZone:tz},end:{dateTime:fmt(en),timeZone:tz},recurrence:['RRULE:'+rr],reminders:{useDefault:false,overrides:[{method:'popup',minutes:0}]}});
+  let ev;
+  if(t.ge){try{ev=await gApi('calendars/primary/events/'+t.ge,{method:'PATCH',body})}catch(e){t.ge=''}}
+  if(!t.ge)ev=await gApi('calendars/primary/events',{method:'POST',body});
+  t.ge=ev.id;save();toast('Задачу збережено в Google Calendar');
+ }catch(e){toast('Календар: '+e.message)}
+}
+function gSet(){
+ if(NATIVE && (!S.g||!S.g.id)){
+  return nSet();
+ }
+ const G=S.g||{id:'',w:false,on:false};
+ return `<h2>Google Calendar</h2>
+ <p class="meta">Застосунок читає ваші події на сьогодні, скорочує підбірку, якщо вільного часу мало, і показує збіги подій із часом задач.</p>
+ <label>OAuth Client ID</label><input id="g-id" value="${esc(G.id)}" autocomplete="off" placeholder="…apps.googleusercontent.com">
+ <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input id="g-w" type="checkbox" style="width:auto" ${G.w?'checked':''}> Дозволити додавати задачі в календар (право на запис)</label>
+ <div class="acts"><button class="btn" data-a="gcon">${G.on?'Перепідключити':'Підключити'}</button>${G.on?`<button class="ghost" data-a="gsync">Оновити події</button><button class="ghost" data-a="gdis">Відключити</button>`:''}</div>
+ <p class="meta">Статус: ${!G.on?'не підключено':gok()?(calOn()?`підключено, подій сьогодні: ${CAL.ev.length}`:'підключено, події не завантажені'+(CAL.err?': '+esc(CAL.err):'')):'потрібна синхронізація'}</p>
+ ${NATIVE?nSet():''}`;
 }
 
 
@@ -291,7 +380,7 @@ let CALS=[],chOK=false,sst;
 function schedSoon(){if(!NATIVE)return;clearTimeout(sst);sst=setTimeout(rescheduleNative,800)}
 async function ensureChannel(){
  if(chOK)return;
- await NP.LocalNotifications.createChannel({id:'reminders',name:'Нагадування про задачі',importance:4,visibility:1,vibration:true});
+ try{await NP.LocalNotifications.createChannel({id:'reminders',name:'Нагадування про задачі',importance:4,visibility:1,vibration:true});}catch(e){}
  chOK=true;
 }
 async function refreshNS(){
@@ -353,10 +442,10 @@ async function initNative(){
  try{
   await ensureChannel();
   let p=await NP.LocalNotifications.checkPermissions();
-  if(p.display==='prompt'||p.display==='prompt-with-rationale')p=await NP.LocalNotifications.requestPermissions();
+  if(p.display==='prompt'||p.display==='prompt-with-rationale'){try{p=await NP.LocalNotifications.requestPermissions();}catch(e){}}
   await refreshNS();await rescheduleNative();
  }catch(e){toast('Сповіщення: '+e.message)}
- if(S.nc.on){await loadCalNative();R()}
+ if(S.nc && S.nc.on){await loadCalNative();R()}
 }
 function remSet(){
  if(!NATIVE) return '';
@@ -389,7 +478,7 @@ function evTimes(e,a,b){
 async function loadCalNative(){
  try{
   const C=NP.CapacitorCalendar;
-  const pm=await C.checkPermission({scope:'readCalendar'});
+  const pm=await C.checkPermission({scope:'readCalendar'}).catch(()=>({result:'denied'}));
   if(pm.result!=='granted'){CAL.ok=false;CAL.err='немає дозволу на календар';CAL.ts=Date.now();return}
   if(!CALS.length)await listCalNative();
   const a=new Date();a.setHours(0,0,0,0);const b=new Date(a);b.setDate(b.getDate()+1);
@@ -413,7 +502,7 @@ async function loadCalNative(){
 }
 async function ncConnect(){
  try{
-  const r=await NP.CapacitorCalendar.requestFullCalendarAccess();
+  const r=await NP.CapacitorCalendar.requestFullCalendarAccess().catch(()=>({result:'denied'}));
   if(r.result!=='granted')return toast('Без дозволу на календар підключення неможливе');
   S.nc.on=true;await listCalNative();
   if(!S.nc.ids.length)S.nc.ids=CALS.filter(c=>!/holiday|contacts|#/i.test(c.ownerAccount||'')).map(c=>String(c.id));
@@ -437,7 +526,7 @@ async function ncAdd(){
  if(!S.nc.wid)return toast('Оберіть календар для запису в налаштуваннях');
  try{
   const C=NP.CapacitorCalendar;
-  const r=await C.requestFullCalendarAccess();if(r.result!=='granted')return toast('Потрібен дозвіл на календар');
+  const r=await C.requestFullCalendarAccess().catch(()=>({result:'denied'}));if(r.result!=='granted')return toast('Потрібен дозвіл на календар');
   if(t.ne){try{await C.deleteEvent({id:t.ne})}catch(e){}t.ne=''}
   let d=null;for(let k=0;k<400&&!d;k++){const x=new Date();x.setDate(x.getDate()+k);if(due(t,x))d=x}
   if(!d)return toast('Не вдалося знайти дату початку');
@@ -486,12 +575,12 @@ document.addEventListener('click',async e=>{
   try{const r=await askAI('Помити посуд','day');toast('Модель '+S.ai.model+' працює: тест дав оцінку '+TL[r.tm]+', '+DL[r.d])}catch(err){toast(err.message==='HTTP 429'?'Ліміт цієї моделі вичерпано або вона недоступна на вашому тарифі. Оберіть іншу.':err.message==='HTTP 404'?'Такої моделі немає. Оберіть іншу зі списку.':'Помилка: '+err.message+'. Перевірте ключ і модель.')}
  }
  else if(a==='models')loadModels(b);
- else if(a==='gcon'){return ncConnect();}
- else if(a==='gsync'){await loadCalNative();R();}
- else if(a==='gdis'){S.nc.on=false;CAL.ev=[];CAL.ok=false;save();R();}
- else if(a==='gadd'){return ncAdd();}
+ else if(a==='gcon'){return gConnect();}
+ else if(a==='gsync'){return gSync();}
+ else if(a==='gdis'){return gDisconnect();}
+ else if(a==='gadd'){return gAdd();}
  else if(a==='ntest')nTest();
- else if(a==='perm'){return nPerm();}
+ else if(a==='perm'){if(NATIVE)return nPerm();}
  else if(a==='exp')exportData();
  else if(a==='reset'){if(confirm('Замінити всі задачі стандартними шаблонами?')){S.tasks=seed();save();R()}}
 });
