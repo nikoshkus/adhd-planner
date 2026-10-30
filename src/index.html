@@ -263,8 +263,8 @@ const fmtMin=m=>Math.floor(m/60)+' год '+m%60+' хв';
 const mmDay=d=>{const n=new Date();return d.toDateString()===n.toDateString()?d.getHours()*60+d.getMinutes():d>n?1440:0};
 const CAL={ev:[],ok:false,d:'',ts:0,err:''};
 let gtok='',gexp=0;
-const calEnabled=()=> (NATIVE&&(S.nc&&S.nc.on)) || (S.g&&S.g.on);
-const canWrite=()=>(NATIVE&&(S.nc&&S.nc.on&&S.nc.wid)) || (S.g&&S.g.on&&S.g.w);
+const calEnabled=()=>NATIVE?!!(S.nc&&S.nc.on):!!(S.g&&S.g.on);
+const canWrite=()=>NATIVE?!!(S.nc&&S.nc.on&&S.nc.wid):!!(S.g&&S.g.on&&S.g.w);
 const gok=()=>NATIVE?(!!(S.nc&&S.nc.on)):!!gtok&&Date.now()<gexp;
 const calOn=()=>CAL.ok&&CAL.d===today;
 function freeMin(){
@@ -280,7 +280,7 @@ function clash(t){
 }
 function calLine(){
  if(!calEnabled())return '';
- if(!gok() && !(NATIVE&&S.nc&&S.nc.on))return `<p class="meta">📅 Календар не синхронізований. <button class="link" data-a="gsync">Синхронізувати</button></p>`;
+ if(!gok())return `<p class="meta">📅 Календар не синхронізований. <button class="link" data-a="gsync">Синхронізувати</button></p>`;
  if(!calOn())return `<p class="meta">📅 ${CAL.err?'Помилка календаря: '+esc(CAL.err):'Завантажую події…'}</p>`;
  return `<p class="meta">📅 ${CAL.ev.length?CAL.ev.map(e=>`${hm(e.s)}–${hm(e.e)} ${esc(e.n)}`).join(' · '):'Подій на сьогодні немає'}. Вільно до 22:00: ${fmtMin(Math.max(freeMin(),0))}.</p>`;
 }
@@ -309,7 +309,7 @@ async function gApi(path,o={}){
  return j;
 }
 async function loadCal(){
- if(NATIVE && S.nc && S.nc.on){return loadCalNative();}
+ if(NATIVE){ if(S.nc&&S.nc.on){return loadCalNative();} return; }
  if(!gok())return;
  const a=new Date();a.setHours(0,0,0,0);const b=new Date(a);b.setDate(b.getDate()+1);
  try{
@@ -320,21 +320,18 @@ async function loadCal(){
  CAL.ts=Date.now();
 }
 async function gConnect(){
- if(NATIVE && (!S.g||!S.g.id)){
-  // prefer native calendar on Android if no Google configured
-  return ncConnect();
- }
+ if(NATIVE){ return ncConnect(); }
  const id=$('#g-id').value.trim();if(!id)return toast('Вставте Client ID');
  if(!S.g)S.g={};S.g={...S.g,id,w:$('#g-w').checked};save();
  try{await gAuth('consent');S.g.on=true;save();await loadCal();R();toast(CAL.ok?'Календар підключено':'Підключено, але події не отримано: '+CAL.err)}
  catch(e){toast('Не вдалося підключити: '+e.message)}
 }
 async function gSync(){
- if(NATIVE && S.nc && S.nc.on){await loadCalNative();R();return}
+ if(NATIVE){ if(S.nc&&S.nc.on){await loadCalNative();} R(); return }
  try{if(!gok())await gAuth('');await loadCal();R()}catch(e){toast('Календар: '+e.message)}
 }
 function gDisconnect(){
- if(NATIVE && S.nc && S.nc.on){S.nc.on=false;CAL.ev=[];CAL.ok=false;save();R();return}
+ if(NATIVE){S.nc.on=false;CAL.ev=[];CAL.ok=false;save();R();return}
  try{if(gtok&&window.google)google.accounts.oauth2.revoke(gtok)}catch(e){}
  gtok='';gexp=0;CAL.ev=[];CAL.ok=false;if(S.g)S.g.on=false;save();R();toast('Календар відключено');
 }
@@ -342,7 +339,7 @@ async function gAdd(){
  if(!saveTask(true))return;const t=editing;
  if(!t.r)return toast('Вкажіть час нагадування: він стане часом події');
  try{
-  if(NATIVE && S.nc && S.nc.on)return ncAdd();
+  if(NATIVE){ if(S.nc&&S.nc.on)return ncAdd(); return toast('Спочатку підключіть календар у налаштуваннях'); }
   if(!gok())await gAuth('');
   let d=null;for(let k=0;k<400&&!d;k++){const x=new Date();x.setDate(x.getDate()+k);if(due(t,x))d=x}
   if(!d)return toast('Не вдалося знайти дату початку');
@@ -358,9 +355,7 @@ async function gAdd(){
  }catch(e){toast('Календар: '+e.message)}
 }
 function gSet(){
- if(NATIVE && (!S.g||!S.g.id)){
-  return nSet();
- }
+ if(NATIVE){ return nSet(); }
  const G=S.g||{id:'',w:false,on:false};
  return `<h2>Google Calendar</h2>
  <p class="meta">Застосунок читає ваші події на сьогодні, скорочує підбірку, якщо вільного часу мало, і показує збіги подій із часом задач.</p>
