@@ -5,3 +5,4 @@ android/
 *.jks
 signing-info.txt
 .DS_Store
+debug/
