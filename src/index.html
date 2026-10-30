@@ -103,7 +103,7 @@ function row(t,mode){
 function vCheck(){
  const G=[['m','Який настрій?',[[1,'😞 Важко'],[2,'😐 Так собі'],[3,'🙂 Добре']]],['e','Скільки енергії?',[[1,'Мало'],[2,'Середньо'],[3,'Багато']]],['t','Скільки часу готові попрацювати?',[[30,'30 хв'],[60,'1 год'],[120,'2 год'],[240,'4 год і більше']]]];
  const ok=draft.m&&draft.e&&draft.t;
- return `<p>Три швидкі питання, щоб підібрати справи під ваш стан.</p>${calOn()?`<p class="meta">📅 Вільно в календарі до 22:00: ${fmtMin(Math.max(freeMin(),0))}</p>`:''}`+G.map(g=>`<h2>${g[1]}</h2><div class="chips">${g[2].map(o=>`<button class="chip" aria-pressed="${draft[g[0]]===o[0]}" data-a="ci" data-k="${g[0]}" data-v="${o[0]}">${o[1]}</button>`).join('')}</div>`).join('')
+ return `<p>Три швидкі питання, щоб підібрати справи під ваш стан.</p>${calLine()}`+G.map(g=>`<h2>${g[1]}</h2><div class="chips">${g[2].map(o=>`<button class="chip" aria-pressed="${draft[g[0]]===o[0]}" data-a="ci" data-k="${g[0]}" data-v="${o[0]}">${o[1]}</button>`).join('')}</div>`).join('')
  +`<p style="margin-top:24px"><button class="btn" data-a="ciok" ${ok?'':'disabled'}>Показати підбірку</button> <button class="link" data-a="ciskip">Пропустити, показати все</button></p>`;
 }
 function vToday(){
@@ -280,9 +280,9 @@ function clash(t){
 }
 function calLine(){
  if(!calEnabled())return '';
- if(!gok())return `<p class="meta">📅 Календар не синхронізований. <button class="link" data-a="gsync">Синхронізувати</button></p>`;
- if(!calOn())return `<p class="meta">📅 ${CAL.err?'Помилка календаря: '+esc(CAL.err):'Завантажую події…'}</p>`;
- return `<p class="meta">📅 ${CAL.ev.length?CAL.ev.map(e=>`${hm(e.s)}–${hm(e.e)} ${esc(e.n)}`).join(' · '):'Подій на сьогодні немає'}. Вільно до 22:00: ${fmtMin(Math.max(freeMin(),0))}.</p>`;
+ if(!gok())return `<p class="meta">Календар не синхронізований. <button class="link" data-a="gsync">Синхронізувати</button></p>`;
+ if(!calOn())return `<p class="meta">${CAL.err?'Помилка календаря: '+esc(CAL.err):'Завантажую події…'}</p>`;
+ return `<p class="meta">${CAL.ev.length?CAL.ev.map(e=>`${hm(e.s)}–${hm(e.e)} ${esc(e.n)}`).join(' · '):'Подій на сьогодні немає'}. Вільно до 22:00: ${fmtMin(Math.max(freeMin(),0))}.</p>`;
 }
 function gis(){
  return new Promise((res,rej)=>{
