@@ -510,7 +510,7 @@ function nSet(){
  const cl=CALS.length?CALS.map(c=>`<label style="display:flex;gap:8px;align-items:center;color:var(--ink);margin:6px 0"><input type="checkbox" style="width:auto" data-ch="ncal" data-id="${esc(c.id)}" ${N.ids.includes(String(c.id))?'checked':''}><span>${esc(c.title)}${c.accountName?` <span class="meta">(${esc(c.accountName)})</span>`:''}</span></label>`).join(''):'<p class="meta">Календарів не знайдено.</p>';
  return `<h2>Календар телефону</h2>
  <p class="meta">Застосунок читає календарі, які вже синхронізовані з телефоном, зокрема з усіх ваших акаунтів, без входу через Google. Події лишаються на пристрої й не передаються ШІ.</p>
- <div class="acts"><button class="btn" data-a="gcon">${N.on?'Оновити дозвіл і список':'Підключити календар'}</button>${N.on?'<button class="ghost" data-a="gsync">Оновити події</button><button class="ghost" data-a="gdis">Відключити</button>':''}</div>
+ <div class="acts"><button class="btn" data-a="gcon">${N.on?'Оновити дозвіл і список':'Підключити календар'}</button>${N.on?'<button class="ghost" data-a="gsync">Оновити події</button><button class="ghost" data-a="gdis">Відключити</button><button class="ghost" data-a="cdiag">Діагностика календаря</button>':''}</div>
  ${N.on?`<label>Які календарі враховувати</label>${cl}
  <label>Календар для запису задач</label><select data-ch="nwr"><option value="">— не записувати —</option>${CALS.map(c=>`<option value="${esc(c.id)}" ${String(c.id)===N.wid?'selected':''}>${esc(c.title)}${c.accountName?' · '+esc(c.accountName):''}</option>`).join('')}</select>
  <p class="meta">Статус: ${calOn()?'подій сьогодні: '+CAL.ev.length:esc(CAL.err||'події не завантажені')}. Якщо та сама зустріч є у двох календарях, вона враховується один раз.</p>`:''}`;
@@ -534,6 +534,17 @@ async function ncAdd(){
   try{ev=await C.createEvent({...base,endDate:en.getTime()})}catch(e1){ev=await C.createEvent({...base,duration:'PT'+mins+'M'})}
   t.ne=ev.id;save();toast('Задачу записано в календар телефону');
  }catch(e){toast('Календар: '+e.message)}
+}
+async function calDiag(){
+ try{
+  const C=NP.CapacitorCalendar;
+  const a=new Date();a.setHours(0,0,0,0);
+  const b=new Date(a.getTime()+3*86400000);
+  const{result}=await C.listEventsInRange({from:a.getTime(),to:b.getTime()});
+  const L=result||[];
+  const sample=L.slice(0,3).map(e=>JSON.stringify(e).slice(0,400)).join('\n\n');
+  alert(`Календарів: ${CALS.length}\nВибрані id: ${JSON.stringify(S.nc.ids)}\nid календарів: ${JSON.stringify(CALS.map(c=>c.id))}\nПодій за 3 дні (без фільтрів): ${L.length}\n\n${sample}`);
+ }catch(e){alert('Помилка: '+e.message)}
 }
 function delEvt(t){
  if(NATIVE){if(t.ne)NP.CapacitorCalendar.deleteEvent({id:t.ne}).catch(()=>{});return}
@@ -577,6 +588,7 @@ document.addEventListener('click',async e=>{
  else if(a==='ntest')nTest();
  else if(a==='perm'){if(NATIVE)return nPerm();}
  else if(a==='exp')exportData();
+ else if(a==='cdiag')calDiag();
  else if(a==='reset'){if(confirm('Замінити всі задачі стандартними шаблонами?')){S.tasks=seed();save();R()}}
 });
 document.addEventListener('change',e=>{
